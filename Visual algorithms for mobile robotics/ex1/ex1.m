@@ -1,11 +1,14 @@
 clear all;
 close all;
+
 undistorted_img = imread("data/images_undistorted/img_0001.jpg");
+distorted_image = imread("data/images/img_0001.jpg");
+
+undistorted_gray = rgb2gray(undistorted_img);
+distorted_gray = rgb2gray(distorted_image);
+
 K = readmatrix("data/K.txt");
 poses = readmatrix("data/poses.txt");
-undistorted_gray = rgb2gray(undistorted_img);
-distorted_image = imread("data/images/img_0001.jpg");
-distorted_gray = rgb2gray(distorted_image);
 % D = readmatrix("data/D.txt"); todo: read k1 and k2 from D.txt
 k1 = -1.6774e-06;
 k2 = 2.5847e-12;
@@ -18,6 +21,7 @@ z = 0;
 [x_w, y_w, z_w] = meshgrid(x,y,z); %x, y, z world coordinates
 [R, t] = poseVectorToTransformationMatrix(poses);
 [U, V] = projectEdges(R, x_w, y_w, z_w, t, K, k1, k2, false);
+
 subplot(2,2,1), imshow(undistorted_gray);
 hold on;
 scatter(U, V, 'filled');
@@ -27,6 +31,7 @@ cube_size = 8;
 cube_init = [0 0 0];
 [cube_xs, cube_ys, cube_zs] = getCubeMatrix(cube_size, cube_init);
 [cube_U, cube_V] = projectCube(cube_xs, cube_ys, cube_zs, R, t, K, k1, k2, false);
+
 subplot(2,2,2), imshow(undistorted_gray); 
 hold on;
 DrawCube(cube_U, cube_V);
@@ -36,6 +41,7 @@ DrawCube(cube_U, cube_V);
 
 % part 3.2
 [U, V] = projectEdges(R, x_w, y_w, z_w, t, K, k1, k2, true);
+
 subplot(2,2,3), imshow(distorted_gray);
 hold on;
 scatter(U, V, 'filled');
