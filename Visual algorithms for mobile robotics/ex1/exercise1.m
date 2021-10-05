@@ -1,4 +1,4 @@
-clear all;
+clear;
 close all;
 
 undistorted_img = imread("data/images_undistorted/img_0001.jpg");
@@ -47,29 +47,53 @@ hold on;
 scatter(U, V, 'filled');
 
 %part 3.3
-% todo
+[undistorted_image] = undistort_image(R, t, K, k1, k2, distorted_gray);
+subplot(2,2,4), imshow(undistorted_image);
+hold on;
+
+
+function [undistorted_image] = undistort_image(R, t, K, k1, k2, distorted_image)
+[width, height, depth] = size(distorted_image);
+undistorted_image = uint8(zeros(width, height));
+for i=1:width
+   for j = 1:height
+       [ud, vd] = distort_coordinates(i, j, K, k1, k2);
+       u1 = floor(ud);
+       v1 = floor(vd);
+       a = ud-u1;
+       b = vd-v1;
+       if u1+1 > 0 && u1+1 <= width && v1+1 > 0 && v1+1 <= height
+           undistorted_image(i,j) = (1-b) * ((1-a)*distorted_image(u1,v1) + a*distorted_image(u1,v1+1)) ...
+               + b * ((1-a)*distorted_image(u1+1,v1) + a*distorted_image(u1+1,v1+1));
+       end
+       % undistorted_image(i, j) = distorted_image(u1, v1);
+   end
+end
+end
 
 
 function [] = DrawCube(cube_U, cube_V)
-plot([cube_U(1) cube_U(2)], [cube_V(1) cube_V(2)],'Color','r','LineWidth',2)
-plot([cube_U(2) cube_U(3)], [cube_V(2) cube_V(3)],'Color','r','LineWidth',2)
-plot([cube_U(3) cube_U(4)], [cube_V(3) cube_V(4)],'Color','r','LineWidth',2)
-plot([cube_U(1) cube_U(4)], [cube_V(1) cube_V(4)],'Color','r','LineWidth',2)
-plot([cube_U(5) cube_U(6)], [cube_V(5) cube_V(6)],'Color','r','LineWidth',2)
-plot([cube_U(6) cube_U(7)], [cube_V(6) cube_V(7)],'Color','r','LineWidth',2)
-plot([cube_U(7) cube_U(8)], [cube_V(7) cube_V(8)],'Color','r','LineWidth',2)
-plot([cube_U(5) cube_U(8)], [cube_V(5) cube_V(8)],'Color','r','LineWidth',2)
-plot([cube_U(5) cube_U(1)], [cube_V(5) cube_V(1)],'Color','r','LineWidth',2)
-plot([cube_U(6) cube_U(2)], [cube_V(6) cube_V(2)],'Color','r','LineWidth',2)
-plot([cube_U(7) cube_U(3)], [cube_V(7) cube_V(3)],'Color','r','LineWidth',2)
-plot([cube_U(8) cube_U(4)], [cube_V(8) cube_V(4)],'Color','r','LineWidth',2)
+plot([cube_U(1) cube_U(2)], [cube_V(1) cube_V(2)],'Color','r','LineWidth',2);
+plot([cube_U(2) cube_U(3)], [cube_V(2) cube_V(3)],'Color','r','LineWidth',2);
+plot([cube_U(3) cube_U(4)], [cube_V(3) cube_V(4)],'Color','r','LineWidth',2);
+plot([cube_U(1) cube_U(4)], [cube_V(1) cube_V(4)],'Color','r','LineWidth',2);
+plot([cube_U(5) cube_U(6)], [cube_V(5) cube_V(6)],'Color','r','LineWidth',2);
+plot([cube_U(6) cube_U(7)], [cube_V(6) cube_V(7)],'Color','r','LineWidth',2);
+plot([cube_U(7) cube_U(8)], [cube_V(7) cube_V(8)],'Color','r','LineWidth',2);
+plot([cube_U(5) cube_U(8)], [cube_V(5) cube_V(8)],'Color','r','LineWidth',2);
+plot([cube_U(5) cube_U(1)], [cube_V(5) cube_V(1)],'Color','r','LineWidth',2);
+plot([cube_U(6) cube_U(2)], [cube_V(6) cube_V(2)],'Color','r','LineWidth',2);
+plot([cube_U(7) cube_U(3)], [cube_V(7) cube_V(3)],'Color','r','LineWidth',2);
+plot([cube_U(8) cube_U(4)], [cube_V(8) cube_V(4)],'Color','r','LineWidth',2);
 end
+
 
 function [cube_xs, cube_ys, cube_zs] = getCubeMatrix(cube_size, cube_init)
 cube_xs = [cube_init(1) cube_init(1) cube_init(1) cube_init(1) cube_init(1)+cube_size cube_init(1)+cube_size cube_init(1)+cube_size cube_init(1)+cube_size];
 cube_ys = [cube_init(2) cube_init(2)+cube_size cube_init(2)+cube_size cube_init(2) cube_init(2) cube_init(2)+cube_size cube_init(2)+cube_size cube_init(2)];
 cube_zs = [cube_init(3) cube_init(3) cube_init(3)-cube_size cube_init(3)-cube_size cube_init(3) cube_init(3) cube_init(3)-cube_size cube_init(3)-cube_size];
 end
+
 
 function [U, V] = projectCube(cube_xs, cube_ys, cube_zs, R, t, K, k1, k2, distortion)
 U = []; V = [];
@@ -79,6 +103,7 @@ for i = 1:length(cube_xs)
     U = [U u]; V = [V v];
 end
 end
+
 
 function [U, V] = projectEdges(R, x_w, y_w, z_w, t, K, k1, k2, distortion)
 [rows, columns, height] = size(x_w);
@@ -94,30 +119,40 @@ for i = 1:rows
 end
 end
 
+
 function [u, v] = projectPoint(R, x, y, z, t, K, k1, k2, distortion)
 if distortion
-    Img_frame = K*[R t]*[x; y; z; 1];
-    Img_frame = Img_frame/Img_frame(3);
-    disp(Img_frame)
-    u_mapped = Img_frame(1);
-    v_mapped = Img_frame(2);
-    u0 = K(1,3);
-    v0 = K(2,3);
-    r_square = (u_mapped - u0)*(u_mapped - u0) + (v_mapped - v0)*(v_mapped - v0);
-    points_delta = [(u_mapped - u0); (v_mapped - v0)];
-    optical_center = [u0; v0];
-    factor = (1 + k1*r_square + k2*(r_square^2));
-    Pd_init = factor * points_delta;
-    Pd = Pd_init + + optical_center;
-    u = Pd(1);
-    v = Pd(2);
+    [u_mapped, v_mapped] = map_world_to_image(K, R, t, x, y, z);
+    [ud, vd] = distort_coordinates(u_mapped, v_mapped, K, k1, k2);
+    u = ud; % just to return values
+    v = vd; % just to return values
 else
-    Img_frame = K*[R t]*[x; y; z; 1];
-    Img_frame = Img_frame/Img_frame(3);
-    u = Img_frame(1);
-    v = Img_frame(2);
+    [u,v] = map_world_to_image(K, R, t, x, y, z);
 end
 end
+
+
+function [u, v] = map_world_to_image(K, R, t, x, y, z)
+Img_frame = K*[R t]*[x; y; z; 1];
+Img_frame = Img_frame/Img_frame(3);
+u = Img_frame(1);
+v = Img_frame(2);
+end
+
+
+function [ud, vd] = distort_coordinates(u_mapped, v_mapped, K, k1, k2)
+u0 = K(1,3);
+v0 = K(2,3);
+r_square = (u_mapped - u0)*(u_mapped - u0) + (v_mapped - v0)*(v_mapped - v0);
+points_delta = [(u_mapped - u0); (v_mapped - v0)];
+optical_center = [u0; v0];
+factor = (1 + k1*r_square + k2*(r_square^2));
+Pd_init = factor * points_delta;
+Pd = Pd_init + optical_center;
+ud = Pd(1);
+vd = Pd(2);
+end
+
 
 function [R, t] = poseVectorToTransformationMatrix(poses)
 wx = poses(1,1); wy = poses(1,2); wz = poses(1,3);
